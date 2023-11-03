@@ -18,13 +18,26 @@ class ConsulClient:
         self.token = token
         self.consul = consul.Consul(host=host, port=port)
 
-    def register(self, name, service_id, address, port, tags, interval, httpcheck):  # 注册服务 注册服务的服务名  端口  以及 健康监测端口
+    def register(self, name, service_id, address, port, tags, interval, httpcheck):
+        # 注册服务 注册服务的服务名  端口  以及 健康监测端口
         self.consul.agent.service.register(name, service_id=service_id, address=address, port=port, tags=tags,
-                                           interval=interval, httpcheck=httpcheck)
+                                           interval=interval, check=httpcheck)
+        pass
 
     def getService(self, name):  # 负载均衡获取服务实例
+        # client: 'http://127.5.9.79:8500/v1/catalog/service/student-service'
+
+        # 尝试通过
+        # self.consul.agent.services()
+        # {ConnectionError}HTTPConnectionPool(host='127.5.9.79', port=8500): Max retries exceeded with url: /v1/agent/services (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001A9CD73BE48>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))
         url = 'http://' + self.host + ':' + str(self.port) + '/v1/catalog/service/' + name  # 获取 相应服务下的DataCenter
-        dataCenterResp = requests.get(url)
+
+        requests.adapters.DEFAULT_RETRIES = 5  # 增加重连次数
+
+        req = requests.session()
+        req.keep_alive = False  # 关闭多余连接
+
+        dataCenterResp = req.get(url)
         if dataCenterResp.status_code != 200:
             raise Exception('连接 consul 错误')
         listData = json.loads(dataCenterResp.text)

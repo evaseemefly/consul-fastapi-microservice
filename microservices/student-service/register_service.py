@@ -6,6 +6,8 @@ import consul
 configuration = Config()
 
 def register():
+    # TODO:[*] 23-11-02 此处心跳检测不成功，怀疑是 url 地址错误引起的
+
     check_http = consul.Check.http(
         'http://student_service:8000/health', interval='10s'
     )
